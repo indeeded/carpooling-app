@@ -5,6 +5,7 @@ import { User } from './entities/user.entity';
 import { Ride } from './entities/ride.entity';
 import { Booking } from './entities/booking.entity';
 import { WaitlistEntry } from './entities/waitlist-entry.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -21,6 +22,9 @@ import { WaitlistEntry } from './entities/waitlist-entry.entity';
         logging: true,
       }),
     }),
+    AuthModule,
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
