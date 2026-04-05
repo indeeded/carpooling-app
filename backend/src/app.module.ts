@@ -6,6 +6,7 @@ import { Ride } from './entities/ride.entity';
 import { Booking } from './entities/booking.entity';
 import { WaitlistEntry } from './entities/waitlist-entry.entity';
 import { AuthModule } from './auth/auth.module';
+import { RidesModule } from './rides/rides.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AuthModule } from './auth/auth.module';
       }),
     }),
     AuthModule,
+    RidesModule,
   ],
   controllers: [],
   providers: [],
