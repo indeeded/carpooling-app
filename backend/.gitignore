@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.production
+
+# Build
+dist/
+
+# NestJS debug
+.nest/
+
+# Logs
+logs/
+*.log
+
+# Test coverage
+coverage/
+
+# Local uploads folder
+uploads/
