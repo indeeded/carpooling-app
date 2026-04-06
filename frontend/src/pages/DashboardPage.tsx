@@ -8,11 +8,8 @@ interface Booking {
   status: string;
   bookedAt: string;
   ride: {
-    id: string;
-    origin: string;
-    destination: string;
-    departureAt: string;
-    pricePerSeat: number;
+    id: string; origin: string; destination: string;
+    departureAt: string; pricePerSeat: number;
     driver: { firstName: string; lastName: string };
   };
 }
@@ -22,22 +19,15 @@ interface WaitlistEntry {
   position: number;
   status: string;
   ride: {
-    id: string;
-    origin: string;
-    destination: string;
+    id: string; origin: string; destination: string;
     departureAt: string;
     driver: { firstName: string; lastName: string };
   };
 }
 
 interface Ride {
-  id: string;
-  origin: string;
-  destination: string;
-  departureAt: string;
-  availableSeats: number;
-  totalSeats: number;
-  status: string;
+  id: string; origin: string; destination: string;
+  departureAt: string; availableSeats: number; totalSeats: number; status: string;
   bookings: { id: string; status: string; passenger: { firstName: string; lastName: string } }[];
 }
 
@@ -48,198 +38,193 @@ export default function DashboardPage() {
 
   const { data: bookings } = useQuery<Booking[]>({
     queryKey: ['my-bookings'],
-    queryFn: async () => {
-      const { data } = await api.get('/bookings/me');
-      return data;
-    },
+    queryFn: async () => { const { data } = await api.get('/bookings/me'); return data; },
+    enabled: !isDriver,
+  });
+
+  const { data: waitlistEntries } = useQuery<WaitlistEntry[]>({
+    queryKey: ['my-waitlist'],
+    queryFn: async () => { const { data } = await api.get('/waitlist/me'); return data; },
     enabled: !isDriver,
   });
 
   const { data: myRides } = useQuery<Ride[]>({
     queryKey: ['my-rides'],
-    queryFn: async () => {
-      const { data } = await api.get('/rides/driver/me');
-      return data;
-    },
+    queryFn: async () => { const { data } = await api.get('/rides/driver/me'); return data; },
     enabled: isDriver,
   });
 
-  const cancelMutation = useMutation({
-    mutationFn: (bookingId: string) => api.delete(`/bookings/${bookingId}`),
+  const cancelBookingMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/bookings/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
   });
 
   const cancelRideMutation = useMutation({
-    mutationFn: (rideId: string) => api.delete(`/rides/${rideId}`),
+    mutationFn: (id: string) => api.delete(`/rides/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-rides'] }),
   });
 
-  const { data: waitlistEntries } = useQuery<WaitlistEntry[]>({
-  queryKey: ['my-waitlist'],
-  queryFn: async () => {
-    const { data } = await api.get('/waitlist/me');
-    return data;
-  },
-  enabled: !isDriver,
+  const leaveWaitlistMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/waitlist/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-waitlist'] }),
   });
 
-  const leaveWaitlistMutation = useMutation({
-  mutationFn: (entryId: string) => api.delete(`/waitlist/${entryId}`),
-  onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-waitlist'] }),
+  const formatDate = (d: string) => new Date(d).toLocaleString('sl-SI', {
+    weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500 text-sm mt-1">Welcome back, {user?.firstName}</p>
+        </div>
+        {isDriver && (
+          <Link to="/rides/new" className="btn-primary">+ Post a ride</Link>
+        )}
+      </div>
 
       {/* Passenger view */}
       {!isDriver && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">My bookings</h2>
-          {!bookings?.length && (
-            <p className="text-gray-400 text-sm">No bookings yet. <Link to="/" className="text-blue-600 hover:underline">Find a ride</Link></p>
-          )}
-          <div className="space-y-3">
-            {bookings?.map((booking) => (
-              <div key={booking.id} className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Link to={`/rides/${booking.ride.id}`} className="font-semibold hover:text-blue-600">
-                      {booking.ride.origin} → {booking.ride.destination}
-                    </Link>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(booking.ride.departureAt).toLocaleString('sl-SI', {
-                        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
-                    <p className="text-sm text-gray-500">Driver: {booking.ride.driver.firstName} {booking.ride.driver.lastName}</p>
-                    <p className="text-sm font-medium text-blue-600 mt-1">€{Number(booking.ride.pricePerSeat).toFixed(2)}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {booking.status}
-                    </span>
-                    {booking.status === 'confirmed' && (
-                      <button
-                        onClick={() => cancelMutation.mutate(booking.id)}
-                        disabled={cancelMutation.isPending}
-                        className="block mt-2 text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </div>
+        <div className="space-y-8">
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">My bookings</h2>
+            {!bookings?.length ? (
+              <div className="card text-center py-10">
+                <div className="text-4xl mb-3">🎫</div>
+                <p className="font-medium text-slate-700 mb-1">No bookings yet</p>
+                <p className="text-slate-400 text-sm mb-4">Find a ride to get started</p>
+                <Link to="/" className="btn-primary inline-block">Browse rides</Link>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="space-y-3">
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="card flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
+                        {booking.ride.origin[0]}{booking.ride.destination[0]}
+                      </div>
+                      <div>
+                        <Link to={`/rides/${booking.ride.id}`}
+                          className="font-semibold text-slate-900 hover:text-blue-600 transition-colors">
+                          {booking.ride.origin} → {booking.ride.destination}
+                        </Link>
+                        <p className="text-sm text-slate-500">{formatDate(booking.ride.departureAt)}</p>
+                        <p className="text-sm font-medium text-blue-600">€{Number(booking.ride.pricePerSeat).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-4">
+                      <span className={`badge ${booking.status === 'confirmed' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                        {booking.status}
+                      </span>
+                      {booking.status === 'confirmed' && (
+                        <button onClick={() => cancelBookingMutation.mutate(booking.id)}
+                          disabled={cancelBookingMutation.isPending}
+                          className="btn-danger block mt-2 ml-auto">
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">My waitlist</h2>
+            {!waitlistEntries?.length ? (
+              <p className="text-slate-400 text-sm">You are not on any waitlists.</p>
+            ) : (
+              <div className="space-y-3">
+                {waitlistEntries.map((entry) => (
+                  <div key={entry.id} className="card flex items-center justify-between border-amber-200 bg-amber-50">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 font-bold text-sm flex-shrink-0">
+                        #{entry.position}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {entry.ride.origin} → {entry.ride.destination}
+                        </p>
+                        <p className="text-sm text-slate-500">{formatDate(entry.ride.departureAt)}</p>
+                        <p className="text-xs text-amber-600 font-medium mt-0.5">Position #{entry.position} in queue</p>
+                      </div>
+                    </div>
+                    <button onClick={() => leaveWaitlistMutation.mutate(entry.id)}
+                      disabled={leaveWaitlistMutation.isPending}
+                      className="btn-danger flex-shrink-0 ml-4">
+                      Leave
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       )}
 
-      {/* Waitlist */}
-      <div className="mt-8">
-        <h2 className="text-lg font-semibold mb-4">My waitlist</h2>
-        {!waitlistEntries?.length && (
-          <p className="text-gray-400 text-sm">You are not on any waitlists.</p>
-        )}
-        <div className="space-y-3">
-          {waitlistEntries?.map((entry) => (
-            <div key={entry.id} className="bg-white border border-gray-200 rounded-xl p-5">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold">
-                    {entry.ride.origin} → {entry.ride.destination}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {new Date(entry.ride.departureAt).toLocaleString('sl-SI', {
-                      weekday: 'short', day: 'numeric', month: 'short',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Driver: {entry.ride.driver.firstName} {entry.ride.driver.lastName}
-                  </p>
-                  <p className="text-sm text-amber-600 font-medium mt-1">
-                    Position #{entry.position} in queue
-                  </p>
-                </div>
-                <button
-                  onClick={() => leaveWaitlistMutation.mutate(entry.id)}
-                  disabled={leaveWaitlistMutation.isPending}
-                  className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-                >
-                  Leave waitlist
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Driver view */}
       {isDriver && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">My rides</h2>
-            <Link to="/rides/new" className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700">
-              + Post a ride
-            </Link>
-          </div>
-          {!myRides?.length && (
-            <p className="text-gray-400 text-sm">No rides posted yet.</p>
-          )}
-          <div className="space-y-4">
-            {myRides?.map((ride) => (
-              <div key={ride.id} className="bg-white border border-gray-200 rounded-xl p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <Link to={`/rides/${ride.id}`} className="font-semibold hover:text-blue-600">
-                      {ride.origin} → {ride.destination}
-                    </Link>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {new Date(ride.departureAt).toLocaleString('sl-SI', {
-                        weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
-                    <p className="text-sm text-gray-500">{ride.availableSeats}/{ride.totalSeats} seats available</p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      ride.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {ride.status}
-                    </span>
+        <section>
+          {!myRides?.length ? (
+            <div className="card text-center py-10">
+              <div className="text-4xl mb-3">🚗</div>
+              <p className="font-medium text-slate-700 mb-1">No rides posted yet</p>
+              <p className="text-slate-400 text-sm mb-4">Share your journey with others</p>
+              <Link to="/rides/new" className="btn-primary inline-block">Post your first ride</Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {myRides.map((ride) => (
+                <div key={ride.id} className="card">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <Link to={`/rides/${ride.id}`}
+                        className="font-semibold text-slate-900 hover:text-blue-600 transition-colors text-lg">
+                        {ride.origin} → {ride.destination}
+                      </Link>
+                      <p className="text-sm text-slate-500 mt-0.5">{formatDate(ride.departureAt)}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`badge ${ride.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {ride.status}
+                        </span>
+                        <span className="text-sm text-slate-500">
+                          {ride.totalSeats - ride.availableSeats}/{ride.totalSeats} booked
+                        </span>
+                      </div>
+                    </div>
                     {ride.status === 'active' && (
-                      <button
-                        onClick={() => cancelRideMutation.mutate(ride.id)}
+                      <button onClick={() => cancelRideMutation.mutate(ride.id)}
                         disabled={cancelRideMutation.isPending}
-                        className="block mt-2 text-xs text-red-500 hover:text-red-700 disabled:opacity-50 ml-auto"
-                      >
+                        className="btn-danger flex-shrink-0">
                         Cancel ride
                       </button>
                     )}
                   </div>
-                </div>
-                {ride.bookings.filter(b => b.status === 'confirmed').length > 0 && (
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-xs text-gray-500 mb-2">Passengers</p>
-                    <div className="flex flex-wrap gap-2">
-                      {ride.bookings
-                        .filter((b) => b.status === 'confirmed')
-                        .map((b) => (
-                          <span key={b.id} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+
+                  {ride.bookings.filter(b => b.status === 'confirmed').length > 0 && (
+                    <div className="border-t border-slate-100 pt-4">
+                      <p className="text-xs font-medium text-slate-500 mb-2">Passengers</p>
+                      <div className="flex flex-wrap gap-2">
+                        {ride.bookings.filter(b => b.status === 'confirmed').map((b) => (
+                          <span key={b.id}
+                            className="flex items-center gap-1.5 text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+                            <span className="w-5 h-5 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">
+                              {b.passenger.firstName[0]}
+                            </span>
                             {b.passenger.firstName} {b.passenger.lastName}
                           </span>
                         ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       )}
     </div>
   );
