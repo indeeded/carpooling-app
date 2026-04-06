@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { RidesModule } from './rides/rides.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     RidesModule,
     BookingsModule,
     WaitlistModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [],
