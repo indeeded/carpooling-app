@@ -84,6 +84,7 @@ export class BookingsService {
         throw new BadRequestException('Booking is already cancelled');
       }
 
+      
       // Cancel the booking
       booking.status = BookingStatus.CANCELLED;
       await manager.getRepository(Booking).save(booking);
@@ -96,6 +97,9 @@ export class BookingsService {
       ride.availableSeats += 1;
       await manager.getRepository(Ride).save(ride);
 
+      if (new Date(ride.departureAt) < new Date()) {
+      throw new BadRequestException('Cannot book a ride that has already departed');
+      }
       // Promote first person on waitlist if any
       const next = await manager
         .getRepository(WaitlistEntry)

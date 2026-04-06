@@ -1,14 +1,28 @@
 import {
-  IsString,
-  IsInt,
-  IsNumber,
-  IsDateString,
-  Min,
-  Max,
-  MinLength,
-  IsOptional,
+  IsString, IsInt, IsNumber, IsDateString,
+  Min, Max, MinLength, IsOptional, registerDecorator,
+  ValidationOptions, ValidationArguments
 } from 'class-validator';
 import { Type } from 'class-transformer';
+
+function IsFutureDate(validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isFutureDate',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: any) {
+          return new Date(value) > new Date();
+        },
+        defaultMessage() {
+          return 'Departure date must be in the future';
+        },
+      },
+    });
+  };
+}
 
 export class CreateRideDto {
   @IsString()
@@ -20,6 +34,7 @@ export class CreateRideDto {
   destination: string;
 
   @IsDateString()
+  @IsFutureDate()
   departureAt: string;
 
   @IsInt()

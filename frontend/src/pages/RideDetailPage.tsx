@@ -57,6 +57,7 @@ export default function RideDetailPage() {
 
   const isDriver = user?.id === ride.driver.id;
   const isFull = ride.availableSeats === 0;
+  const isPast = new Date(ride.departureAt) < new Date();
 
   return (
     <div className="max-w-xl mx-auto">
@@ -138,7 +139,11 @@ export default function RideDetailPage() {
         )}
 
         {isAuthenticated && !isDriver && user?.role === 'passenger' && (
-          !isFull ? (
+          isPast ? (
+            <div className="text-center py-2 text-sm text-slate-400 bg-slate-50 rounded-xl p-3">
+              This ride has already departed
+            </div>
+          ) : !isFull ? (
             <button onClick={() => bookMutation.mutate()} disabled={bookMutation.isPending}
               className="btn-primary w-full text-base py-3">
               {bookMutation.isPending ? 'Booking...' : 'Book seat'}
