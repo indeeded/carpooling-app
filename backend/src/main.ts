@@ -5,6 +5,14 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import helmet from 'helmet';
 
+console.log('ENV CHECK:', {
+  port: process.env.PORT,
+  nodeEnv: process.env.NODE_ENV,
+  dbUrl: process.env.DATABASE_URL ? 'SET' : 'MISSING',
+  jwtSecret: process.env.JWT_SECRET ? 'SET' : 'MISSING',
+  frontendUrl: process.env.FRONTEND_URL ? 'SET' : 'MISSING',
+});
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
