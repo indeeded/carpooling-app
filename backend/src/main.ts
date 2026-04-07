@@ -1,43 +1,40 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import helmet from 'helmet';
-
-console.log('ENV CHECK:', {
-  port: process.env.PORT,
-  nodeEnv: process.env.NODE_ENV,
-  dbUrl: process.env.DATABASE_URL ? 'SET' : 'MISSING',
-  jwtSecret: process.env.JWT_SECRET ? 'SET' : 'MISSING',
-  frontendUrl: process.env.FRONTEND_URL ? 'SET' : 'MISSING',
-});
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  try {
+    console.log('Starting application...');
+    
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    console.log('App created');
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads' });
+    app.use(helmet());
+    app.enableCors({
+      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      credentials: true,
+    });
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }));
+    app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads' });
 
-  // Security headers
-  app.use(helmet());
-
-  // Allow frontend to talk to backend
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-  });
-
-  // Global prefix — all routes will be /api/...
-  app.setGlobalPrefix('api');
-
-  // Auto-validate all incoming request bodies
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
-
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
-  console.log(`Application running on: http://localhost:${process.env.PORT ?? 3000}`);
+    const port = process.env.PORT ?? 3000;
+    await app.listen(port, '0.0.0.0');
+    console.log(`Application running on port ${port}`);
+    
+  } catch (error) {
+    console.error('FATAL STARTUP ERROR:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    process.exit(1);
+  }
 }
+
 bootstrap();
