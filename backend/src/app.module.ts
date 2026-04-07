@@ -22,7 +22,7 @@ import { UsersModule } from './users/users.module';
         url: config.get<string>('DATABASE_URL'),
         entities: [User, Ride, Booking, WaitlistEntry],
         synchronize: true,
-        ssl: { rejectUnauthorized: false },
+        ssl: { rejectUnauthorized: false, require: true,},
         logging: true,
       }),
     }),
