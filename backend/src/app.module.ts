@@ -21,7 +21,7 @@ import { UsersModule } from './users/users.module';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         entities: [User, Ride, Booking, WaitlistEntry],
-        synchronize: config.get('NODE_ENV') !== 'production',
+        synchronize: true,
         ssl: { rejectUnauthorized: false },
         logging: true,
       }),
