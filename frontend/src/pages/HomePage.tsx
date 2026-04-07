@@ -21,8 +21,10 @@ export default function HomePage() {
     queryKey: ['rides', query],
     queryFn: async () => {
       const params = new URLSearchParams(
-        Object.fromEntries(Object.entries(query).filter(([, v]) => v))
-      );
+        Object.entries(query)
+            .filter(([, v]) => v)
+            .map(([k, v]) => [k, String(v)])
+        );
       const { data } = await api.get(`/rides?${params}`);
       return data;
     },
